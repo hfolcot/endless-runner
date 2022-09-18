@@ -7,6 +7,7 @@ class Runner extends Phaser.GameObjects.Sprite {
         scene.add.existing(this);
         scene.physics.add.existing(this);
         this.body.setCollideWorldBounds(true);
+        this.body.gravity.y = 750;
         this.started = true;
         this.input = {};
         
@@ -24,17 +25,17 @@ class Runner extends Phaser.GameObjects.Sprite {
             ],
             methods: {
                 onEnterState: (lifecycle) => {
-                    console.log(lifecycle);
+                    console.log(lifecycle)
                     this.anims.play(`char-${lifecycle.to}`);
                 }
             }
         });
         this.animPredicates = {
             idle: () => {
-                return this.body.onFloor() && !this.started;
+                return !this.started;
             },
             run: () => {
-                return this.body.onFloor();
+                return this.body.onFloor() && this.started;
             },
             jump: () => {
                 return this.body.velocity.y < 0;
@@ -52,7 +53,7 @@ class Runner extends Phaser.GameObjects.Sprite {
             ],
             methods: {
                 onEnterState: (lifecycle) => {
-                    //console.log(lifecycle);
+                    console.log(lifecycle);
                 },
                 onJump: () => {
                     this.body.setVelocityY(-500);
@@ -72,7 +73,6 @@ class Runner extends Phaser.GameObjects.Sprite {
 
     preUpdate(time, delta) {
         super.preUpdate(time, delta);
-
         this.input.didClick = this.scene.input.activePointer.leftButtonDown();
 
         for (const t of this.moveState.transitions()){
