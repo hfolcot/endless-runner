@@ -10,6 +10,7 @@ class Runner extends Phaser.GameObjects.Sprite {
         this.body.gravity.y = 750;
         this.started = true;
         this.input = {};
+        this.alive = true;
         
         this.setupAnimations();
         this.setupMovement();
@@ -21,11 +22,11 @@ class Runner extends Phaser.GameObjects.Sprite {
             transitions: [
                 { name: 'idle', from: '*', to: 'idle' },
                 { name: 'run', from: ['idle','jumping'], to: 'running' },
-                { name: 'jump', from: ['idle', 'running'], to: 'jumping' }
+                { name: 'jump', from: ['idle', 'running'], to: 'jumping' },
+                { name: 'die', from: '*', to: 'dead' }
             ],
             methods: {
                 onEnterState: (lifecycle) => {
-                    console.log(lifecycle)
                     this.anims.play(`char-${lifecycle.to}`);
                 }
             }
@@ -38,7 +39,10 @@ class Runner extends Phaser.GameObjects.Sprite {
                 return this.body.onFloor() && this.started;
             },
             jump: () => {
-                return this.body.velocity.y < 0;
+                return this.body.velocity.y < 0 && this.alive;
+            },
+            die: () => {
+                return !this.alive;
             }
 
         };
@@ -46,14 +50,13 @@ class Runner extends Phaser.GameObjects.Sprite {
 
     setupMovement() {
         this.moveState = new StateMachine({
-            init: 'standing',
+            init: 'running',
             transitions: [
-                { name: 'jump', from: 'standing', to: 'jumping'},
-                { name: 'touchdown', from: 'jumping', to: 'standing' }
+                { name: 'jump', from: 'running', to: 'jumping'},
+                { name: 'touchdown', from: 'jumping', to: 'running' }
             ],
             methods: {
                 onEnterState: (lifecycle) => {
-                    console.log(lifecycle);
                 },
                 onJump: () => {
                     this.body.setVelocityY(-500);
@@ -87,6 +90,10 @@ class Runner extends Phaser.GameObjects.Sprite {
                 break;
             }
         }
+    }
+
+    die() {
+        this.alive = false;
     }
 }
 
