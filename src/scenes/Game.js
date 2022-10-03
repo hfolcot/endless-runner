@@ -5,8 +5,33 @@ class Game extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
 
-    this.obstacleImages = ['blue-boulder', 'red-boulder', 'grey-boulder', 'poop'];
-    this.obstacleSpeed = -300;
+    this.obstacleItems = [{
+      name: 'blue-boulder',
+      width: 32,
+      height: 33
+    }, {
+      name: 'red-boulder',
+      width: 64,
+      height: 65
+    }, {
+      name: 'grey-boulder',
+      width: 64,
+      height: 65
+    }, {
+      name: 'poop',
+      width: 50,
+      height: 41
+    }];
+    this.obstacleSpeed = -200;
+    this.gameOver = false;
+    this.difficulty = 0;
+    this.score = 0;
+    this.backgroundSpeed = 1;
+    this.fontOptions = {
+      fontSize: `${this.fontSize}px`, 
+      fill: '#1D1D1D',
+      fontFamily: 'sans-serif'
+  }
   }
 
   init(data) { }
@@ -28,6 +53,8 @@ class Game extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 97
     });
+    this.load.image('sky', 'assets/environment/sky.png');
+    this.load.image('trees', 'assets/environment/trees.png');
     this.load.image('ground', 'assets/environment/ground.png');
     this.load.image('poop', 'assets/environment/poop.png');
     this.load.image('grey-boulder', 'assets/environment/grey_small.png');
@@ -38,8 +65,10 @@ class Game extends Phaser.Scene {
   create(data) {
     this.createRunner();
     this.createAnimations();
+    this.createBackground();
     this.createGround();
     this.createObstacles();
+    this.createScore();
   }
 
   createRunner() {
@@ -78,10 +107,17 @@ class Game extends Phaser.Scene {
     this.ground = this.physics.add.staticGroup();
     for (let i = 0; i < 15; i++) {
       let x = i * 64;
-      this.ground.create(x, this.game.config.height, 'ground');
+      this.ground.create(x, this.game.config.height, 'ground')
+        .setDepth(0)
+        .setOrigin(0, 0.5);
     }
     this.physics.add.collider(this.runner, this.ground);
 
+  }
+
+  createBackground() {
+    this.skyBackground = this.add.tileSprite(0, 0, this.width, this.height, 'sky').setOrigin(0).setDepth(-2);
+    this.treesBackground = this.add.tileSprite(0, 0, this.width, this.height, 'trees').setOrigin(0).setDepth(-1);
   }
 
   createObstacles() {
@@ -92,18 +128,31 @@ class Game extends Phaser.Scene {
       x += Phaser.Math.Between(600, 1000);
     }
 
-    this.obstacles.setVelocityX(-400);
+    this.obstacles.setVelocityX(this.obstacleSpeed);
     this.physics.add.collider(this.obstacles, this.runner, this.endGame.bind(this));
   }
 
+  createScore() {
+    this.score = 0;
+    this.scoreText = this.add.text(10, 10, `SCORE: ${this.score}`, this.fontOptions);
+  }
 
   update(time, delta) {
     this.updateObstacles();
+    this.updateBackground();
+    if (this.score % 10 == 0) {
+      if (this.difficultyJustSet) return;
+      this.difficultyJustSet = true;
+      this.backgroundSpeed += 0.1;
+    }
   }
 
   addNewObstacle(x) {
-    const image = this.obstacleImages[Phaser.Math.Between(0, 3)];
-    this.obstacles.create(x, this.game.config.height - 40, image).setImmovable(true).setVelocityX(this.obstacleSpeed);
+    const image = this.obstacleItems[Phaser.Math.Between(0, 3)];
+    this.obstacles.create(x, this.game.config.height - 40, image.name)
+      .setImmovable(true)
+      .setVelocityX(this.obstacleSpeed - (this.difficulty))
+      .setSize(image.width, image.height);
   }
 
   updateObstacles() {
@@ -111,9 +160,20 @@ class Game extends Phaser.Scene {
       if (obstacle.getBounds().right < 0) {
         obstacle.destroy();
         this.addNewObstacle(this.getLastObstacleX() + Phaser.Math.Between(600, 1000));
+        this.difficulty++;
+        this.updateScore();
       }
     })
   }
+
+  updateScore() {
+    this.score++;
+    this.scoreText.setText(`SCORE: ${this.score}`);
+    if (this.score % 10 !== 0 && this.difficultyJustSet) {
+      this.difficultyJustSet = false;
+    }
+  }
+
 
   getLastObstacleX() {
     let endX = 0;
@@ -123,7 +183,16 @@ class Game extends Phaser.Scene {
     return endX;
   }
 
+  updateBackground() {
+    if (!this.gameOver) {
+
+      this.skyBackground.tilePositionX += 2 * this.backgroundSpeed;
+      this.treesBackground.tilePositionX += 3 * this.backgroundSpeed;
+    }
+  }
+
   endGame() {
+    this.gameOver = true;
     this.runner.die();
     this.obstacles.setVelocityX(0);
   }

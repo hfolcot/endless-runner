@@ -16,3 +16,4 @@ dist/
 npm-debug.log*
 webpack.config.js
 .babelrc
+assets/environment/uncompressed/

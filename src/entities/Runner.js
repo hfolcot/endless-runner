@@ -7,6 +7,7 @@ class Runner extends Phaser.GameObjects.Sprite {
         scene.add.existing(this);
         scene.physics.add.existing(this);
         this.body.setCollideWorldBounds(true);
+        this.body.setSize(this.width - 20, this.height);
         this.body.gravity.y = 750;
         this.started = true;
         this.input = {};
@@ -66,7 +67,7 @@ class Runner extends Phaser.GameObjects.Sprite {
 
         this.movePredicates = {
             jump: () => {
-                return this.input.didClick;
+                return this.input.didClick && this.alive;
             },
             touchdown: () => {
                 return this.body.onFloor();
